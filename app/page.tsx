@@ -1,5 +1,4 @@
 import { Box, Button, Divider, Paper, Typography } from "@mui/material";
-import { Search } from "./components/Search";
 import ExploreImg from "../util/images/explore.png";
 import StudyImg from "../util/images/study.png";
 import ListenImg from "../util/images/listen.png";
