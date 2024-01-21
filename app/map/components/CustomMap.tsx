@@ -1,92 +1,65 @@
-"use client ";
-import type {
-  Layer,
-  LayerGroup,
-  FitBoundsOptions,
-  LatLngBoundsExpression,
-  MapOptions,
-} from "leaflet";
-import { Control, Map as LeafletMap, map, marker, tileLayer } from "leaflet";
+import { MapContainer, MapContainerProps, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { HTMLProps } from "react";
-import { useCallback, useEffect, useState } from "react";
+import "leaflet-defaulticon-compatibility";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
-import L from "leaflet";
-//@ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
+import * as React from "react";
+import L, { Layer, LayerGroup, Map } from "leaflet";
+import "leaflet.heat";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
+import { XenoCantoRecording } from "@/util/models/Pocketbase";
+import { Ref } from "react";
 
-export type ControlledLayer = {
-  addLayer(layer: Layer): void;
-  removeLayer(layer: Layer): void;
-};
-
-export type LeafletContextInterface = Readonly<{
-  __version: number;
-  map: LeafletMap;
-  layerContainer?: ControlledLayer | LayerGroup;
-  layersControl?: Control.Layers;
-  overlayContainer?: Layer;
-  pane?: string;
-}>;
-
-const CONTEXT_VERSION = 1;
-
-function createLeafletContext(map: LeafletMap): LeafletContextInterface {
-  return Object.freeze({ __version: CONTEXT_VERSION, map });
+export interface IMapProps extends MapContainerProps {
+  markers: any[];
+  points: XenoCantoRecording[];
 }
 
-type DivProps = HTMLProps<HTMLDivElement>;
+export function CustomMap({
+  center = [122, 37],
+  zoom = 3,
+  style,
+  markers,
+  points,
+}: IMapProps) {
+  const [map, setMap] = React.useState<Map | null>(null);
+  const [heatLayer, setHeatLayer] = React.useState();
 
-export interface MapContainerProps extends MapOptions, DivProps {
-  bounds?: LatLngBoundsExpression;
-  boundsOptions?: FitBoundsOptions;
-  whenReady?: () => void;
-}
+  React.useEffect(() => {
+    if (heatLayer) map?.removeLayer(heatLayer);
+    const _points = points
+      ? points.map((p) => {
+          return [p.lat, p.lng];
+        })
+      : [];
 
-export function Map({
-  center = [0, 0],
-  zoom = 1,
-  bounds,
-  boundsOptions = { padding: [500, 500], maxZoom: 21 },
-  whenReady,
-  ...options
-}: MapContainerProps) {
-  const [context, setContext] = useState<LeafletContextInterface | null>(null);
+    if (map)
+      setHeatLayer(
+        // @ts-ignore
+        L.heatLayer(_points, { radius: 25, max: 10, minOpacity: 0.3 }).addTo(
+          map
+        )
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points]);
 
-  const mapRef = useCallback((node: HTMLDivElement | null) => {
-    if (node !== null && context === null) {
-      const map = new LeafletMap(node, { zoomControl: false, ...options });
-
-      tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-      }).addTo(map);
-
-      marker(center).addTo(map);
-
-      if (center != null && zoom != null) {
-        map.setView(center, zoom);
-      } else if (bounds != null) {
-        map.fitBounds(bounds, boundsOptions);
-      }
-      if (whenReady != null) {
-        map.whenReady(whenReady);
-      }
-
-      setContext(createLeafletContext(map));
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      context?.map.remove();
-    };
-  }, []);
-
-  return <div style={options.style} ref={mapRef} />;
+  const displayMap = React.useMemo(
+    () => (
+      <MapContainer
+        style={style}
+        center={center}
+        zoom={zoom}
+        scrollWheelZoom={true}
+        ref={setMap}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {/* {markers} */}
+      </MapContainer>
+    ),
+    [center, style, zoom]
+  );
+  return <div>{displayMap}</div>;
 }
