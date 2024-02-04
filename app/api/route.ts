@@ -1,27 +1,27 @@
 "use server";
 import { SearchState } from "@/util/models/Pocketbase";
+import pb from "@/util/pocketbase/initPocketbase";
+import { NextApiRequest, NextApiResponse } from "next";
 import { ListResult, RecordModel } from "pocketbase";
-import pb from "../initPocketbase";
 
 const COLLECTION_NAME = "recordings";
 
-export const preload = () => {};
-
 export async function searchWithState(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const list = await fetch(req.body.url);
+  // Handle your API logic here
+  res.status(200).json({ message: "Hello from the API route!" });
+}
+
+export async function oldSearchWithState(
   state: SearchState
 ): Promise<ListResult<RecordModel>[]> {
-  try {
-    if (state?.gen) {
-      const allPages = await getAllPages(getFilterFromState(state));
-      return allPages;
-    }
-  } catch (error) {
-    console.log("Error in searchWithState: ", error);
-
-    throw error;
-  } finally {
-    return [];
+  if (state.gen) {
+    return await getAllPages(getFilterFromState(state));
   }
+  return [];
 }
 
 /**
@@ -30,7 +30,7 @@ export async function searchWithState(
  * @returns The filter string generated from the search parameters.
  */
 function getFilterFromState(state: SearchState) {
-  const { gen, sp, loc } = state;
+  const { gen, sp } = state;
   let filter = "";
 
   function handleConcat(string: string) {
@@ -40,7 +40,6 @@ function getFilterFromState(state: SearchState) {
 
   if (!!gen) handleConcat(`gen~"${gen.toLowerCase()}"`);
   if (!!sp) handleConcat(`sp~${sp}`);
-  if (!!loc) handleConcat(`loc~"${loc.toLowerCase()}"`);
 
   return filter;
 }
@@ -62,11 +61,11 @@ export async function getAllPages(filter: string) {
     );
   }
 
-  return [initial, ...(await Promise.all(funcs))];
+  return [...(await Promise.all(funcs)), initial];
 }
 
-// export function getSpecies(pages: ListResult<RecordModel>[]): string[] {
-//   const allItems = pages.map((page) => page.items).flat();
+function getSpecies(pages: ListResult<RecordModel>[]): string[] {
+  const allItems = pages.map((page) => page.items).flat();
 
-//   return Array.from(new Set(allItems.map((item) => item.sp)).values());
-// }
+  return Array.from(new Set(allItems.map((item) => item.sp)).values());
+}

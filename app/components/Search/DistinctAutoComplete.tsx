@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useEffect, useState } from "react";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -12,51 +12,47 @@ import {
   ListItem,
 } from "@mui/material";
 import pb from "@/util/pocketbase/initPocketbase";
+import usePrevious from "@/hooks/usePrevious";
 
 export interface IDistinctAutoCompleteProps<T> {
   field: string;
   label: string;
   sx?: SxProps<Theme>;
   onChange: (val: string) => void;
-  freeSolo?: boolean;
-  queryFn?: any;
-  options?: string[];
+  disabled?: boolean;
 }
 export default function DistinctAutoComplete<T>({
   field,
   label,
   onChange,
-  freeSolo,
-  options,
 }: IDistinctAutoCompleteProps<T>) {
-  const [open, setOpen] = React.useState(false);
-  const [text, setText] = React.useState<string>("");
-  const [loading, setLoading] = React.useState(false);
-
-  const [withCount, setWithCount] = React.useState<
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [withCount, setWithCount] = useState<
     readonly { label: string; count: number }[]
   >([]);
-  React.useEffect(() => {
-    let active = true;
-    if (!text) return undefined;
+
+  useEffect(() => {
+    const hasOption = withCount.find((opt) => opt.label === text);
+    if (!text || hasOption) return;
 
     setLoading(true);
 
     const debounce = setTimeout(async () => {
       try {
-        const list = await pb.collection(`count_${field}`).getList(1, 100, {
-          filter: `${field} >= "${text.toLowerCase().trim()}"`,
+        const res = await pb.collection(`count_gen`).getList(1, 50, {
+          filter: `gen >= "${text}"`,
         });
 
-        if (active) {
-          setWithCount(
-            list.items.map((itm) => ({
-              label: capitalize(itm[field]),
-              count: itm.COUNT,
-            }))
-          );
-          setLoading(false);
-        }
+        const list = res.items.map((itm) => ({
+          label: capitalize(itm.gen),
+          count: itm.COUNT,
+        }));
+
+        setLoading(false);
+
+        setWithCount(list);
       } catch (error) {
         console.error(error);
 
@@ -67,15 +63,14 @@ export default function DistinctAutoComplete<T>({
     }, 250);
 
     return () => {
+      setLoading;
       clearTimeout(debounce);
-      active = false;
     };
-  }, [field, text]);
+  }, [text, withCount]);
 
   return (
     <Box>
       <Autocomplete
-        id="asynchronous-demo"
         sx={{ width: 300 }}
         open={open}
         openText={text}
@@ -87,23 +82,20 @@ export default function DistinctAutoComplete<T>({
           setOpen(false);
         }}
         onChange={(e, val) => {
-          setText("");
-          onChange(!!val && typeof val === "object" ? val.label : "");
+          onChange(val?.label || "");
         }}
         filterOptions={(opts, state) =>
           opts.filter((opt) =>
-            (opt?.label?.toLowerCase() || opt).startsWith(
-              state.inputValue.toLowerCase()
-            )
+            opt?.label?.toLowerCase().startsWith(state.inputValue.toLowerCase())
           )
         }
-        freeSolo={freeSolo}
         onInputChange={(e, val) => setText(val)}
-        isOptionEqualToValue={(opt, val) => opt === val}
-        getOptionLabel={options ? (opt) => capitalize(opt) : undefined}
-        renderOption={options ? undefined : renderOptions}
-        options={options || withCount}
-        loading={false}
+        isOptionEqualToValue={({ label: optLabel }, { label: valLabel }) =>
+          optLabel === valLabel
+        }
+        getOptionLabel={(opt) => capitalize(opt.label)}
+        renderOption={renderOptions}
+        options={withCount}
         renderInput={(params) => (
           <TextField
             {...params}

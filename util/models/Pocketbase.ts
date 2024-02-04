@@ -58,3 +58,10 @@ export interface SearchState {
   ssp?: string;
   q?: "A" | "B";
 }
+
+export interface ResultsState extends SearchState {
+  species?: string[];
+  recordings: XenoCantoRecording[];
+  genera?: string[]; // plural of "genus"
+  subspecies?: string[];
+}

@@ -1,31 +1,39 @@
+"use client";
 import { MapContainer, MapContainerProps, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-
-import * as React from "react";
-import L, { Layer, LayerGroup, Map } from "leaflet";
+import React, { useEffect, useState } from "react";
+import L from "leaflet";
 import "leaflet.heat";
 
 import { XenoCantoRecording } from "@/util/models/Pocketbase";
-import { Ref } from "react";
+import dynamic from "next/dynamic";
+
+export interface IMapPageProps {}
+export default dynamic(
+  async () => await import("./CustomMap").then((module) => module.CustomMap),
+  {
+    loading: () => <p>A map is loading</p>,
+    ssr: false,
+  }
+);
 
 export interface IMapProps extends MapContainerProps {
-  markers: any[];
+  markers?: any[];
   points: XenoCantoRecording[];
 }
-
-export function CustomMap({
-  center = [122, 37],
+export function Map({
+  center = [37, -122],
   zoom = 3,
   style,
-  markers,
   points,
 }: IMapProps) {
-  const [map, setMap] = React.useState<Map | null>(null);
-  const [heatLayer, setHeatLayer] = React.useState();
+  // @ts-ignore
+  const [map, setMap] = useState<Map | null>(null);
+  const [heatLayer, setHeatLayer] = useState();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (heatLayer) map?.removeLayer(heatLayer);
     const _points = points
       ? points.map((p) => {
@@ -56,7 +64,6 @@ export function CustomMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {/* {markers} */}
       </MapContainer>
     ),
     [center, style, zoom]

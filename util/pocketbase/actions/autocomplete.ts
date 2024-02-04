@@ -1,5 +1,6 @@
 "use server";
 
+import { capitalize } from "lodash";
 import pb from "../initPocketbase";
 
 export async function getGenusAutoComplete(genSearchText: string) {
@@ -8,7 +9,7 @@ export async function getGenusAutoComplete(genSearchText: string) {
   });
 
   return list.items.map((itm) => ({
-    label: itm.gen,
+    label: capitalize(itm.gen),
     count: itm.COUNT,
   }));
 }
