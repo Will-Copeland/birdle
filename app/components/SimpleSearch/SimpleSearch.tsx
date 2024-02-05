@@ -1,4 +1,6 @@
 "use client";
+//@
+
 import {
   Autocomplete,
   Box,
@@ -47,6 +49,7 @@ const SimpleSearch: React.FC<SimpleSearchProps> = ({
       <Autocomplete
         sx={{ width: 300 }}
         options={data || []}
+        //@ts-ignore
         getOptionLabel={(opt) => opt[searchBy]}
         renderInput={(params) => <TextField {...params} label="Search" />}
         onInputChange={(e, val) => setSearchText(val)}
@@ -58,10 +61,13 @@ const SimpleSearch: React.FC<SimpleSearchProps> = ({
               display: "flex",
               justifyContent: "space-between",
             }}
+            //@ts-ignore
             onClick={() => onSelect(searchBy, opt[searchBy])}
             key={opt.id}
           >
+            {/* @ts-ignore */}
             <span>{capitalize(opt[searchBy])}</span>
+            {/* @ts-ignore */}
             <span>{opt.COUNT}</span>
           </ListItem>
         )}

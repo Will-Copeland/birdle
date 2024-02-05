@@ -18,6 +18,7 @@ export const simpleSearch = cache(
 
       return res.map((rec) => ({
         ...rec,
+        // @ts-ignore
         [searchBy]: capitalizeAll(rec[searchBy]),
       }));
     } catch (error) {

@@ -58,7 +58,7 @@ export function CustomMap({
         {markers}
       </MapContainer>
     ),
-    [center, style, zoom]
+    [center, markers, style, zoom]
   );
   return <div>{displayMap}</div>;
 }
